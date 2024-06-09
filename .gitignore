@@ -1,3 +1,4 @@
 .env
 .log
 /config/db.js
+.gitignore
