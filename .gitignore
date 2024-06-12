@@ -1,3 +1,4 @@
 # .env
 .log
 /db.js
+node_modules
