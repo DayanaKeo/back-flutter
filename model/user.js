@@ -1,6 +1,8 @@
 const sql = require('../config/db')
 const bcrypt = require('bcrypt');
 const jwt    = require('jsonwebtoken');
+const { Sequelize, DataTypes } = require('sequelize');
+const sequelize = new Sequelize('../config/db');
 
 const User = function(user) {
   this.prenom = user.prenom;
