@@ -1,71 +1,98 @@
 const User = require('../model/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 const SECRET_KEY = process.env.SECRET_KEY;
+require('dotenv').config();
 
-exports.create = (req, res) => {
-    if (!req.body.prenom || !req.body.nom || !req.body.email || !req.body.password) {
-      res.status(400).send({
-        message: 'Veuillez renseigner toutes les données nécessaires'
-      });
-      return;
-    }
-  
-    const newUser = new User({
-      prenom: req.body.prenom,
-      nom: req.body.nom,
-      email: req.body.email,
-      password: req.body.password,
+exports.create = async (req, res) => {
+  const { prenom, nom, email, password, password2 } = req.body;
+
+  // Vérification que tous les champs nécessaires sont renseignés
+  if (!prenom || !nom || !email || !password || !password2) {
+    return res.status(400).send({
+      message: 'Veuillez renseigner toutes les données nécessaires'
     });
-  
+  }
+
+  // Vérification que les mots de passe correspondent
+  if (password !== password2) {
+    return res.status(400).send({
+      message: 'Les mots de passe ne correspondent pas'
+    });
+  }
+
+  try {
+    // Hash du mot de passe avant de l'enregistrer en base de données
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création d'un nouvel utilisateur dans la base de données
+    const newUser = new User({
+      prenom,
+      nom,
+      email,
+      password: hashedPassword,
+      password2: hashedPassword,
+      role_id: 1  // Défaut : utilisateur
+    });
+
     User.create(newUser, (err, data) => {
-      if (err)
-        res.status(500).send({
+      if (err) {
+        return res.status(500).send({
           message: err.message || 'Une erreur s\'est produite lors de la création de l\'utilisateur'
         });
-      else res.send(data);
+      }
+
+      // Générer un token JWT
+      const token = jwt.sign({ id: data.id }, SECRET_KEY, {
+        expiresIn: 86400 // 24 heures
+      });
+
+      // Répondre avec les informations de l'utilisateur et le token
+      res.send({
+        user: {
+          id: data.id,
+          prenom: data.prenom,
+          nom: data.nom,
+          email: data.email,
+        },
+        token
+      });
     });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || 'Une erreur s\'est produite lors de la création de l\'utilisateur'
+    });
+  }
 };
 
 exports.findAll = (req, res) => {
   User.findAll((err, data) => {
-    if (err)
+    if (err) {
       res.status(500).send({
         message: err.message || 'Une erreur s\'est produite lors de la récupération des utilisateurs'
       });
-    else res.send(data);
+    } else {
+      res.send(data);
+    }
   });
 };
 
-//AUTHENTIFICATION 
+exports.auth = async (req, res) => {
+  const { email, password } = req.body;
 
+  User.authenticate(email, async (err, user) => {
+    if (err) {
+      return res.status(403).send({ message: err.message });
+    }
 
+    const passwordMatch = await bcrypt.compare(password, user.password);
 
-exports.auth = (req, res) => {
-    const { email, password } = req.body;
+    if (!passwordMatch) {
+      return res.status(403).send({ message: 'Mot de passe incorrect' });
+    }
 
-    User.findByEmail(email, password, (err, user) => {
-        if (err) {
-            return res.status(500).json({ message: err.message });
-        }
+    const token = jwt.sign({ id: user.id, role: user.role_id }, SECRET_KEY, { expiresIn: '24h' });
 
-        if (user) {
-            // Supprimer le mot de passe du résultat avant de le renvoyer
-            delete user.password;
-
-            // Générer le token JWT
-            const expireIn = 24 * 60 * 60; // 24 heures en secondes
-            const token = jwt.sign({ user: user }, SECRET_KEY, { expiresIn: expireIn });
-
-            // Envoyer le token dans l'en-tête de réponse
-            res.header('Authorization', 'Bearer ' + token);
-
-            // Renvoyer une réponse réussie avec le token
-            return res.status(200).json({ token: token });
-        } else {
-            // Si l'utilisateur n'est pas trouvé ou que le mot de passe est incorrect
-            return res.status(403).json({ message: 'Mauvaises informations d\'identification' });
-        }
-    });
+    res.status(200).send({ token });
+  });
 };
