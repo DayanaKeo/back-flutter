@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = process.env.SECRET_KEY;
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
@@ -210,5 +212,106 @@ exports.sendVerificationEmail = (req, res) => {
     console.log('Email Sent Successfully');
     console.log(info);
     res.send({ message: 'Email Sent Successfully', info });
+  });
+};
+
+exports.forgetPassword = (req, res) => {
+  const { email } = req.body;
+
+  User.findByEmail(email, (err, user) => {
+    if (err) {
+      return res.status(500).send({ message: 'Erreur lors de la vérification de l\'email' });
+    }
+    if (!user) {
+      return res.status(404).send('Email introuvable');
+    }
+
+    const token = crypto.randomBytes(20).toString('hex');
+    const tokenExpiry = Date.now() + 3600000; // 1 heure
+
+    User.storeResetToken(user.id, token, tokenExpiry, (err, result) => {
+      if (err) {
+        return res.status(500).send('Erreur lors de la génération du token de réinitialisation');
+      }
+
+      const mailOptions = {
+        from: 'your-email@gmail.com',
+        to: email,
+        subject: 'Password Reset',
+        html: `
+          <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+              <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <h2 style="text-align: center; color: #4CAF50;">Réinitialisation de mot de passe</h2>
+                <p>Bonjour,</p>
+                <p>Veuillez cliquer sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
+                <div style="text-align: center; margin: 20px 0;">
+                  <a href="http://localhost:4000/api/user/reset-password/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Réinitialiser mon mot de passe</a>
+                </div>
+                <p>Le lien sera invalide dans 1 heure.</p>
+                <p>Merci,</p>
+                <p>L'équipe</p>
+              </div>
+            </body>
+          </html>
+        `
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log(error);
+          res.status(500).send('Erreur d\'envoi d\'email');
+        } else {
+          console.log(`Email envoyé: ${info.response}`);
+          res.status(200).send('Cliquez sur le lien et suivez les instructions pour réinitialiser votre mot de passe');
+        }
+      });
+    });
+  });
+};
+exports.resetPassword = (req, res) => {
+  const { token } = req.params;
+
+  User.findByResetToken(token, (err, user) => {
+    if (err) {
+      return res.status(500).send('Erreur lors de la vérification du token');
+    }
+    if (!user) {
+      return res.status(404).send('Token invalide ou expiré');
+    }
+    res.send(
+      `<form method="post" action="/api/user/update-password">
+        <input type="hidden" name="token" value="${token}" />
+        <input type="password" name="password" required placeholder="Nouveau mot de passe"/>
+        <input type="submit" value="Reset Password" />
+      </form>`
+    );
+  });
+};
+
+exports.updatePassword = (req, res) => {
+  const { token, password } = req.body;
+
+  User.findByResetToken(token, (err, user) => {
+    if (err) {
+      return res.status(500).send('Erreur lors de la vérification du token');
+    }
+    if (!user) {
+      return res.status(404).send('Token invalide ou expiré');
+    }
+
+    User.updatePassword(user.id, password, (err, result) => {
+      if (err) {
+        return res.status(500).send('Erreur lors de la mise à jour du mot de passe');
+      }
+
+      User.clearResetToken(user.id, (err) => {
+        if (err) {
+          return res.status(500).send('Erreur lors de la suppression du token de réinitialisation');
+        }
+
+        res.status(200).send('Mot de passe mis à jour avec succès');
+      });
+    });
   });
 };
