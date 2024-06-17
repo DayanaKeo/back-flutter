@@ -8,6 +8,7 @@ const User = function(user) {
   this.password = user.password;
   this.password2 = user.password2
   this.role_id = user.role_id
+  this.email_activate = user.email_activate || false;
 };
 
 User.create = async (newUser, result) => {
@@ -71,6 +72,22 @@ User.authenticate = async (email, password) => {
     });
   });
 };
+
+User.updateEmailActivate = (userId, callback) => {
+  sql.query(
+    'UPDATE user SET email_activate = true WHERE id = ?',
+    [userId],
+    (err, res) => {
+      if (err) {
+        console.error('Error updating email activation:', err);
+        callback(err, null);
+        return;
+      }
+      console.log('Email activation updated successfully');
+      callback(null, res);
+    }
+  );
+}
 
 
 module.exports = User;
