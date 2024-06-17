@@ -7,14 +7,13 @@ require('dotenv').config();
 exports.create = async (req, res) => {
   const { prenom, nom, email, password, password2 } = req.body;
 
-  // Vérification que tous les champs nécessaires sont renseignés
   if (!prenom || !nom || !email || !password || !password2) {
     return res.status(400).send({
       message: 'Veuillez renseigner toutes les données nécessaires'
     });
   }
 
-  // Vérification que les mots de passe correspondent
+  // Vérifier si les mots de passe correspondent
   if (password !== password2) {
     return res.status(400).send({
       message: 'Les mots de passe ne correspondent pas'
@@ -22,40 +21,56 @@ exports.create = async (req, res) => {
   }
 
   try {
-    // Hash du mot de passe avant de l'enregistrer en base de données
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Création d'un nouvel utilisateur dans la base de données
-    const newUser = new User({
-      prenom,
-      nom,
-      email,
-      password: hashedPassword,
-      password2: hashedPassword,
-      role_id: 1  // Défaut : utilisateur
-    });
-
-    User.create(newUser, (err, data) => {
+    // Vérifier si l'utilisateur existe déjà par email
+    User.findByEmail(email, async (err, existingUser) => {
       if (err) {
         return res.status(500).send({
-          message: err.message || 'Une erreur s\'est produite lors de la création de l\'utilisateur'
+          message: err.message || 'Une erreur s\'est produite lors de la vérification de l\'utilisateur'
         });
       }
 
-      // Générer un token JWT
-      const token = jwt.sign({ id: data.id }, SECRET_KEY, {
-        expiresIn: 86400 // 24 heures
+      if (existingUser) {
+        return res.status(400).send({
+          message: 'Un utilisateur avec cet email existe déjà'
+        });
+      }
+
+      // Hacher le mot de passe
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Créer un nouvel utilisateur avec role_id par défaut à 1
+      const newUser = new User({
+        prenom,
+        nom,
+        email,
+        password: hashedPassword,
+        password2: hashedPassword, // Inclure le hachage dans password2 également
+        role_id: 1  // Défaut : utilisateur
       });
 
-      // Répondre avec les informations de l'utilisateur et le token
-      res.send({
-        user: {
-          id: data.id,
-          prenom: data.prenom,
-          nom: data.nom,
-          email: data.email,
-        },
-        token
+      // Enregistrer l'utilisateur dans la base de données
+      User.create(newUser, (err, data) => {
+        if (err) {
+          return res.status(500).send({
+            message: err.message || 'Une erreur s\'est produite lors de la création de l\'utilisateur'
+          });
+        }
+
+        // Générer un token JWT
+        const token = jwt.sign({ id: data.id }, SECRET_KEY, {
+          expiresIn: 86400 // 24 heures
+        });
+
+        // Répondre avec les informations de l'utilisateur et le token
+        res.send({
+          user: {
+            id: data.id,
+            prenom: data.prenom,
+            nom: data.nom,
+            email: data.email,
+          },
+          token
+        });
       });
     });
   } catch (error) {

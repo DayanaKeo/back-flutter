@@ -38,6 +38,22 @@ User.findAll = (result) => {
   });
 };
 
+User.findByEmail = (email, result) => {
+  sql.query("SELECT * FROM user WHERE email = ?", [email], (err, res) => {
+    if (err) {
+      console.log("error: ", err);
+      result(err, null);
+      return;
+    }
+    if (res.length) {
+      result(null, res[0]);
+      return;
+    }
+    result(null, null);
+  });
+};
+
+
 User.authenticate = async (email, password) => {
   return new Promise((resolve, reject) => {
     sql.query("SELECT * FROM user WHERE email = ?", [email], async (err, res) => {
