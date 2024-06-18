@@ -1,9 +1,11 @@
-const User = require('../model/user');
+const User = require('../../model/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const SECRET_KEY = process.env.SECRET_KEY;
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const speakeasy = require('speakeasy');
+
 
 require('dotenv').config();
 
@@ -46,6 +48,8 @@ exports.create = async (req, res) => {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
+      // Générer le secret 2FA
+      const secret = speakeasy.generateSecret({ length: 20 });
 
       const newUser = new User({
         prenom,
@@ -54,7 +58,9 @@ exports.create = async (req, res) => {
         password: hashedPassword,
         password2: hashedPassword,
         role_id: 1,
-        email_activate: false
+        email_activate: false,
+        two_factor_secret: secret.base32,
+        two_factor_enabled: false
       });
 
       User.create(newUser, (err, data) => {
