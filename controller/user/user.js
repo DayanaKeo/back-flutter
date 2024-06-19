@@ -201,7 +201,7 @@ exports.sendVerificationEmail = (req, res) => {
             <div style="text-align: center; margin: 20px 0;">
               <a href="http://localhost:4000/api/user/verify/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Vérifier mon email</a>
             </div>
-            <p>Le lien sera invalide dans 10 minutes.</p>
+            <p>Le lien sera invalide 10 minutes.</p>
             <p>Merci,</p>
             <p>L'équipe</p>
           </div>

@@ -32,13 +32,14 @@ User.create = async (newUser, result) => {
 };
 
 User.saveUser = (user, result) => {
-  sql.query("UPDATE user SET two_factor_secret = ? WHERE id = ?", [user.two_factor_secret, user.id], (err, res) => {
-    if (err) {
-      console.log("Erreur lors de la sauvegarde de l'utilisateur :", err);
-      result(err, null);
-      return;
-    }
-    result(null, res);
+  const query = "UPDATE user SET two_factor_secret = ?, two_factor_enabled = ? WHERE id = ?";
+  sql.query(query, [user.two_factor_secret, user.two_factor_enabled, user.id], (err, res) => {
+      if (err) {
+          console.log("Erreur lors de la sauvegarde de l'utilisateur :", err);
+          result(err, null);
+          return;
+      }
+      result(null, res);
   });
 };
 
@@ -54,6 +55,20 @@ User.findAll = (result) => {
   });
 };
 
+User.findById = (userId, result) => {
+  sql.query("SELECT * FROM user WHERE id = ?", [userId], (err, res) => {
+      if (err) {
+          console.log("error: ", err);
+          result(err, null);
+          return;
+      }
+      if (res.length) {
+          result(null, res[0]);
+          return;
+      }
+      result({ message: "Utilisateur non trouvé" }, null);
+  });
+};
 User.findByEmail = (email, result) => {
   sql.query("SELECT * FROM user WHERE email = ?", [email], (err, res) => {
     if (err) {
@@ -99,7 +114,10 @@ User.updateEmailActivate = (userId, callback) => {
         return;
       }
       console.log('Email activation updated successfully');
-      callback(null, res);
+      const activationLink = `http://localhost:4000/activate-2fa?userId=${userId}`;
+
+      // Envoyer le callback avec le lien d'activation 2FA
+      callback(null, { message: 'Email activation updated successfully', activationLink });
     }
   );
 }
