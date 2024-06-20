@@ -34,80 +34,67 @@ exports.create = async (req, res) => {
   }
 
   try {
-    User.findByEmail(email, async (err, existingUser) => {
-      if (err) {
-        return res.status(500).send({
-          message: err.message || 'Une erreur s\'est produite lors de la vérification de l\'utilisateur'
-        });
-      }
-
-      if (existingUser) {
-        return res.status(400).send({
-          message: 'Un utilisateur avec cet email existe déjà'
-        });
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-      // Générer le secret 2FA
-      const secret = speakeasy.generateSecret({ length: 20 });
-
-      const newUser = new User({
-        prenom,
-        nom,
-        email,
-        password: hashedPassword,
-        password2: hashedPassword,
-        role_id: 1,
-        email_activate: false,
-        two_factor_secret: secret.base32,
-        two_factor_enabled: false
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).send({
+        message: 'Un utilisateur avec cet email existe déjà'
       });
+    }
 
-      User.create(newUser, (err, data) => {
-        if (err) {
-          return res.status(500).send({
-            message: err.message || 'Une erreur s\'est produite lors de la création de l\'utilisateur'
-          });
-        }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Générer le secret 2FA
+    const secret = speakeasy.generateSecret({ length: 20 });
 
-        const token = jwt.sign({ id: data.id }, SECRET_KEY, {
-          expiresIn: '24h'
-        });
+    const newUser = {
+      prenom,
+      nom,
+      email,
+      password: hashedPassword,
+      password2: hashedPassword,
+      role_id: 1,
+      email_activate: false,
+      two_factor_secret: secret.base32,
+      two_factor_enabled: false
+    };
 
-        const mailConfigurations = {
-          from: 'ivan.djuric@railsware.com',
-          to: email,
-          subject: 'Instruction de validation d\'email',
-          html: `
-            <html>
-              <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-                <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                  <h2 style="text-align: center; color: #4CAF50;">Bienvenue!</h2>
-                  <p>Bonjour,</p>
-                  <p>Je suis ravi de vous compter parmi nous.</p>
-                  <p>Veuillez vérifier et valider votre adresse email en cliquant sur le lien ci-dessous :</p>
-                  <div style="text-align: center; margin: 20px 0;">
-                    <a href="http://localhost:4000/api/user/verify/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Vérifier mon email</a>
-                  </div>
-                  <p>Le lien sera invalide dans 10 minutes.</p>
-                  <p>Merci,</p>
-                  <p>L'équipe</p>
-                </div>
-              </body>
-            </html>
-          `
-        };
+    const data = await User.create(newUser);
 
-        transporter.sendMail(mailConfigurations, function (error, info) {
-          if (error) {
-            console.error('Error sending email:', error);
-            return res.status(500).send({ message: 'Error sending email' });
-          }
-          console.log('Email Sent Successfully');
-          console.log(info);
-          res.send({ message: 'Email Sent Successfully', info });
-        });
-      });
+    const token = jwt.sign({ id: data.id }, SECRET_KEY, {
+      expiresIn: '24h'
+    });
+
+    const mailConfigurations = {
+      from: 'ivan.djuric@railsware.com',
+      to: email,
+      subject: 'Instruction de validation d\'email',
+      html: `
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+              <h2 style="text-align: center; color: #4CAF50;">Bienvenue!</h2>
+              <p>Bonjour,</p>
+              <p>Je suis ravi de vous compter parmi nous.</p>
+              <p>Veuillez vérifier et valider votre adresse email en cliquant sur le lien ci-dessous :</p>
+              <div style="text-align: center; margin: 20px 0;">
+                <a href="http://localhost:4000/api/user/verify/${token}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Vérifier mon email</a>
+              </div>
+              <p>Le lien sera invalide dans 10 minutes.</p>
+              <p>Merci,</p>
+              <p>L'équipe</p>
+            </div>
+          </body>
+        </html>
+      `
+    };
+
+    transporter.sendMail(mailConfigurations, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+        return res.status(500).send({ message: 'Error sending email' });
+      }
+      console.log('Email Sent Successfully');
+      console.log(info);
+      res.send({ message: 'Email Sent Successfully', info });
     });
   } catch (error) {
     res.status(500).send({
@@ -128,25 +115,6 @@ exports.findAll = (req, res) => {
   });
 };
 
-exports.auth = async (req, res) => {
-  const { email, password } = req.body;
-
-  User.authenticate(email, async (err, user) => {
-    if (err) {
-      return res.status(403).send({ message: err.message });
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
-      return res.status(403).send({ message: 'Mot de passe incorrect' });
-    }
-
-    const token = jwt.sign({ id: user.id, role: user.role_id }, SECRET_KEY, { expiresIn: '24h' });
-
-    res.status(200).send({ token });
-  });
-};
 
 exports.verifyEmail = async (req, res) => {
   const { token } = req.params;
@@ -321,3 +289,5 @@ exports.updatePassword = (req, res) => {
     });
   });
 };
+
+
