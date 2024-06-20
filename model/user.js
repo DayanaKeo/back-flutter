@@ -101,6 +101,7 @@ User.findAll = (result) => {
     result(null, res);
   });
 };
+
 User.updatePassword = (userId, newPassword, result) => {
   bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
     if (err) {
