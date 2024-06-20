@@ -115,7 +115,6 @@ exports.findAll = (req, res) => {
   });
 };
 
-
 exports.verifyEmail = async (req, res) => {
   const { token } = req.params;
 
@@ -243,6 +242,7 @@ exports.forgetPassword = (req, res) => {
     });
   });
 };
+
 exports.resetPassword = (req, res) => {
   const { token } = req.params;
 
