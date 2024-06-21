@@ -2,12 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { APIToolkit } = require('apitoolkit-express');
+const Joi = require('joi');
 require('dotenv').config()
 
 //DECLARATION ROUTE
 const userRouter = require('./route/user');
 const roleRouter = require('./route/role');
 // const twoFactorRoutes = require('./route/two-factor');
+const childRouter = require('./route/childRoute');
 
 const app = express();
 const port = 4000;
@@ -23,7 +25,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/user', userRouter);
 // app.use('/api/two-factor', twoFactorRoutes);
 app.use('/api/role', roleRouter);
-app.use('/api/auth', userRouter )
+app.use('/api/auth', userRouter );
+app.use('/api/child', childRouter);
 
 app.use(apitoolkitClient.errorHandler);
 app.listen(port, () => {
