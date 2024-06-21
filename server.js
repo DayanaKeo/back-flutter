@@ -10,6 +10,7 @@ const userRouter = require('./route/user');
 const roleRouter = require('./route/role');
 // const twoFactorRoutes = require('./route/two-factor');
 const childRouter = require('./route/childRoute');
+const tuteurRouter = require('./route/tuteurRoute');
 
 const app = express();
 const port = 4000;
@@ -27,6 +28,7 @@ app.use('/api/user', userRouter);
 app.use('/api/role', roleRouter);
 app.use('/api/auth', userRouter );
 app.use('/api/child', childRouter);
+app.use('/api/tuteur', tuteurRouter);
 
 app.use(apitoolkitClient.errorHandler);
 app.listen(port, () => {
