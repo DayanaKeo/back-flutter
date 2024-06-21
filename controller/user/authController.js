@@ -81,7 +81,7 @@ exports.login = async (req, res) => {
                 window: 1
             });
 
-            if (!verified) {
+            if (verified) {
                 return res.status(401).send({ message: 'Code 2FA invalide' });
             }
 
