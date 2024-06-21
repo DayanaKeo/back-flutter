@@ -1,6 +1,8 @@
 const sql = require('../config/db');
 const bcrypt = require('bcrypt');
 const speakeasy = require('speakeasy');
+const crypto = require('crypto');
+
 
 
 const User = function(user) {
@@ -102,32 +104,32 @@ User.findAll = (result) => {
   });
 };
 
-User.updatePassword = (userId, newPassword, result) => {
-  bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
-    if (err) {
-      console.log("bcrypt error: ", err);
-      result(err, null);
-      return;
-    }
-    sql.query(
-      "UPDATE user SET password = ? WHERE id = ?",
-      [hashedPassword, userId],
-      (err, res) => {
-        if (err) {
-          console.log("error: ", err);
-          result(err, null);
-          return;
-        }
-        if (res.affectedRows == 0) {
-          // Aucun utilisateur trouvé avec l'ID
-          result({ message: "Utilisateur non trouvé." }, null);
-          return;
-        }
-        result(null, { id: userId, newPassword: hashedPassword });
-      }
-    );
-  });
-};
+// User.updatePassword = (userId, newPassword, result) => {
+//   bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
+//     if (err) {
+//       console.log("bcrypt error: ", err);
+//       result(err, null);
+//       return;
+//     }
+//     sql.query(
+//       "UPDATE user SET password = ? WHERE id = ?",
+//       [hashedPassword, userId],
+//       (err, res) => {
+//         if (err) {
+//           console.log("error: ", err);
+//           result(err, null);
+//           return;
+//         }
+//         if (res.affectedRows == 0) {
+//           // Aucun utilisateur trouvé avec l'ID
+//           result({ message: "Utilisateur non trouvé." }, null);
+//           return;
+//         }
+//         result(null, { id: userId, newPassword: hashedPassword });
+//       }
+//     );
+//   });
+// };
 
 // Méthode pour générer un token de réinitialisation de mot de passe
 User.generateResetPasswordToken = (userId, callback) => {
@@ -147,119 +149,44 @@ User.verifyResetPasswordToken = (token, callback) => {
   });
 };
 
-User.storeResetToken = (userId, token, tokenExpiry, result) => {
-  sql.query(
-    "UPDATE user SET reset_token = ?, reset_token_expiry = ? WHERE id = ?",
-    [token, tokenExpiry, userId],
-    (err, res) => {
-      if (err) {
-        console.log("error: ", err);
-        result(err, null);
-        return;
-      }
-      result(null, res);
-    }
-  );
-};
-
-User.findByResetToken = (token, result) => {
-  sql.query(
-    "SELECT * FROM user WHERE reset_token = ? AND reset_token_expiry > ?",
-    [token, Date.now()],
-    (err, res) => {
-      if (err) {
-        console.log("error: ", err);
-        result(err, null);
-        return;
-      }
-      if (res.length) {
-        result(null, res[0]);
-        return;
-      }
-      result(null, null);
-    }
-  );
-};
-
-User.updatePassword = (userId, newPassword, result) => {
-  bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
-    if (err) {
-      console.log("bcrypt error: ", err);
-      result(err, null);
-      return;
-    }
-    sql.query(
-      "UPDATE user SET password = ? WHERE id = ?",
-      [hashedPassword, userId],
-      (err, res) => {
-        if (err) {
-          console.log("error: ", err);
-          result(err, null);
-          return;
-        }
-        if (res.affectedRows == 0) {
-          result({ message: "Utilisateur non trouvé." }, null);
-          return;
-        }
-        result(null, { id: userId, newPassword: hashedPassword });
-      }
-    );
+User.storeResetToken = (userId, token, tokenExpiry) => {
+  return new Promise((resolve, reject) => {
+    sql.query("UPDATE user SET reset_token = ?, reset_token_expiry = ? WHERE id = ?", [token, tokenExpiry, userId], (err, res) => {
+      if (err) return reject(err);
+      resolve(res);
+    });
   });
-};
+},
 
-User.clearResetToken = (userId, result) => {
-  sql.query(
-    "UPDATE user SET reset_token = NULL, reset_token_expiry = NULL WHERE id = ?",
-    [userId],
-    (err, res) => {
-      if (err) {
-        console.log("error: ", err);
-        result(err, null);
-        return;
-      }
-      result(null, res);
-    }
-  );
-};
+User.findByResetToken = (token) => {
+  return new Promise((resolve, reject) => {
+    sql.query("SELECT * FROM user WHERE reset_token = ? AND reset_token_expiry > ?", [token, Date.now()], (err, res) => {
+      if (err) return reject(err);
+      resolve(res.length ? res[0] : null);
+    });
+  });
+},
 
-// User.verifyTwoFactorToken = (userId, token, callback) => {
-//   sql.query('SELECT * FROM user WHERE id = ?', [userId], async (err, res) => {
-//     if (err) {
-//       console.error('Erreur lors de la recherche de l\'utilisateur :', err);
-//       return callback(err, null);
-//     }
+User.updatePassword = (userId, newPassword) => {
+  return new Promise((resolve, reject) => {
+    bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
+      if (err) return reject(err);
+      sql.query("UPDATE user SET password = ? WHERE id = ?", [hashedPassword, userId], (err, res) => {
+        if (err) return reject(err);
+        if (res.affectedRows == 0) return reject(new Error("Utilisateur non trouvé."));
+        resolve({ id: userId, newPassword: hashedPassword });
+      });
+    });
+  });
+}
 
-//     if (res.length === 0) {
-//       return callback({ message: 'Utilisateur non trouvé' }, null);
-//     }
-
-//     const user = res[0];
-
-//     if (!user.two_factor_secret) {
-//       return callback({ message: 'Secret 2FA non généré pour l\'utilisateur' }, null);
-//     }
-
-//     const verified = speakeasy.totp.verify({
-//       secret: user.two_factor_secret,
-//       encoding: 'base32',
-//       token: token,
-//       digits: 5,
-//       step: 3600
-//     });
-
-//     if (verified) {
-//       // Mettre à jour l'état 2FA de l'utilisateur à true
-//       sql.query('UPDATE user SET two_factor_enabled = ? WHERE id = ?', [true, userId], (err, result) => {
-//         if (err) {
-//           console.error('Erreur lors de la mise à jour du statut 2FA :', err);
-//           return callback(err, null);
-//         }
-//         callback(null, { message: 'Code vérifié avec succès' });
-//       });
-//     } else {
-//       callback({ message: 'Code invalide' }, null);
-//     }
-//   });
-// };
+User.clearResetToken = (userId) => {
+  return new Promise((resolve, reject) => {
+    sql.query("UPDATE user SET reset_token = NULL, reset_token_expiry = NULL WHERE id = ?", [userId], (err, res) => {
+      if (err) return reject(err);
+      resolve(res);
+    });
+  });
+}
 
 module.exports = User;
