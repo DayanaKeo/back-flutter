@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "apitoolkit-express": "^2.3.1",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -11,7 +12,9 @@
     "init": "^0.1.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.10.0",
-    "npm": "^10.8.1"
+    "nodemailer": "^6.9.13",
+    "npm": "^10.8.1",
+    "speakeasy": "^2.0.0"
   },
   "name": "back-app-flutter",
   "version": "1.0.0",

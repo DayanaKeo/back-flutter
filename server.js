@@ -1,29 +1,31 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const { APIToolkit } = require('apitoolkit-express');
 require('dotenv').config()
 
 //DECLARATION ROUTE
 const userRouter = require('./route/user');
 const roleRouter = require('./route/role');
-
+// const twoFactorRoutes = require('./route/two-factor');
 
 const app = express();
 const port = 4000;
+const apitoolkitClient = APIToolkit.NewClient({ apiKey: process.env.APITOOLKIT_API_KEY });
+
 
 app.use(cors());
+app.use(apitoolkitClient.expressMiddleware);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //ROUTE USER
 app.use('/api/user', userRouter);
+// app.use('/api/two-factor', twoFactorRoutes);
 app.use('/api/role', roleRouter);
+app.use('/api/auth', userRouter )
 
+app.use(apitoolkitClient.errorHandler);
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
-// sql.sync({ force: true }).then(() => {
-//   console.log(`Server is running on http://localhost:${port}`);
-//   // Votre serveur commence ici
-// });
