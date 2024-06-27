@@ -31,6 +31,20 @@ User.create = (newUser) => {
   });
 };
 
+User.findById = (userId) => {
+  return new Promise((resolve, reject) => {
+    sql.query("SELECT * FROM user WHERE id = ?", [userId], (err, res) => {
+      if (err) {
+        reject(err);
+      } else if (res.length) {
+        resolve(res[0]);
+      } else {
+          reject({ kind: "not_found" });
+      }
+    });
+  });
+};
+
 User.saveUser = (user) => {
   return new Promise((resolve, reject) => {
     const query = 'UPDATE user SET email_activate = ?, two_factor_enabled = ?, two_factor_secret = ? WHERE id = ?';
@@ -44,19 +58,6 @@ User.saveUser = (user) => {
   });
 }
 
-User.findById = (userId) => {
-  return new Promise((resolve, reject) => {
-    sql.query("SELECT * FROM user WHERE id = ?", [userId], (err, res) => {
-      if (err) {
-        reject(err);
-      } else if (res.length) {
-        resolve(res[0]);
-      } else {
-        resolve(null);
-      }
-    });
-  });
-};
 
 User.findByEmail = (email) => {
   return new Promise((resolve, reject) => {
