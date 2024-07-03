@@ -4,11 +4,11 @@ const Tuteur = require('../../model/tuteurModel');
 // Schéma de validation pour un enfant
 const tuteur = Joi.object({
   tel: Joi.number().integer().min(10).max(10).required(),
-  lien: Joi.string().min(2).max(50).required(),
+  lien_affilie: Joi.string().min(2).max(50).required(),
 });
 
 exports.create = async (req, res) => {
-  const { tel, lien_affilié } = req.body;
+  const { tel, lien_affilie } = req.body;
   // Validation des données d'entrée
   const { error } = tuteur.validate({ tel, lien_affilie });
   if (error) {
@@ -26,24 +26,24 @@ exports.create = async (req, res) => {
     });
   }
 };
-// exports.findById = async (req, res) => {
-//     const { id } = req.params;
+exports.findTuteurById = async (req, res) => {
+    const { id } = req.params;
   
-//     try {
-//       const tuteur = await Tuteur.findById(id);
-//       return res.status(200).send(tuteur);
-//     } catch (error) {
-//       if (error.kind === "not_found") {
-//         return res.status(404).send({
-//           message: `Tuteur non trouvé avec l'id ${id}`
-//         });
-//       } else {
-//         return res.status(500).send({
-//           message: `Erreur lors de la récupération du tuteur avec l'id ${id}`
-//         });
-//       }
-//     }
-// };
+    try {
+      const tuteur = await Tuteur.findTuteurById(id);
+      return res.status(200).send(tuteur);
+    } catch (error) {
+      if (error.kind === "not_found") {
+        return res.status(404).send({
+          message: `Tuteur non trouvé avec l'id ${id}`
+        });
+      } else {
+        return res.status(500).send({
+          message: `Erreur lors de la récupération du tuteur avec l'id ${id}`
+        });
+      }
+    }
+};
 
 // exports.findAll = (req, res) => {
 //     Tuteur.findAll((err, data) => {

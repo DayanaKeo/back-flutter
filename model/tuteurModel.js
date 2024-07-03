@@ -21,6 +21,20 @@ Tuteur.create = (newTuteur) => {
   });
 };
 
+Tuteur.findTuteurById = (userId) => {
+  return new Promise((resolve, reject) => {
+    sql.query("SELECT * FROM tuteur WHERE user_id = ?", [userId], (err, res) => {
+      if (err) {
+        reject(err);
+      } else if (res.length) {
+        resolve(res[0]);
+      } else {
+        resolve(null); // Si aucun tuteur trouvé
+      }
+    });
+  });
+};
+
 // Tuteur.findById = (id) => {
 //     return new Promise((resolve, reject) => {
 //       sql.query("SELECT * FROM tuteur WHERE id = ?", [id], (err, res) => {
