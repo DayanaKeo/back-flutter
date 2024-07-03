@@ -203,3 +203,15 @@ exports.sendActivate2fa = async (req, res) => {
         });
     });
 };
+
+let blacklistedTokens = [];
+
+exports.logout = (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    blacklistedTokens.push(token);
+    res.status(200).send({ message: 'Déconnexion réussie' });
+}
+
+exports.isTokenBlacklisted = (token) => {
+    return blacklistedTokens.includes(token);
+}
