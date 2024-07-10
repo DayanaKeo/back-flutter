@@ -5,7 +5,7 @@ const SECRET_KEY = process.env.SECRET_KEY;
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
-
+const Tuteur = require('../../model/tuteurModel');
 
 require('dotenv').config();
 
@@ -54,7 +54,7 @@ exports.create = async (req, res) => {
       role_id: 1,
       email_activate: false,
       two_factor_secret: secret.base32,
-      two_factor_enabled: false
+      two_factor_enabled: false,
     };
 
     const data = await User.create(newUser);
@@ -108,7 +108,19 @@ exports.findById = async (req, res) => {
 
   try {
     const user = await User.findById(id);
-    return res.status(200).send(user);
+    if (!user) {
+      return res.status(404).send({
+        message: `Utilisateur non trouvé avec l'id ${id}`
+      });
+    }
+
+    // Récupérer les détails du tuteur
+    const tuteur = await Tuteur.findTuteurById(user.id);
+
+    // Ajoutez les détails du tuteur à l'objet user
+    user.tuteur = tuteur;
+
+    res.status(200).send(user);
   } catch (error) {
     if (error.kind === "not_found") {
       return res.status(404).send({
@@ -133,6 +145,18 @@ exports.findById = async (req, res) => {
 //     }
 //   });
 // };
+
+exports.findAll = (req, res) => {
+  User.findAll((err, data) => {
+    if (err) {
+      res.status(500).send({
+        message: err.message || 'Une erreur s\'est produite lors de la récupération des utilisateurs'
+      });
+    } else {
+      res.send(data);
+    }
+  });
+};
 
 exports.verifyEmail = async (req, res) => {
   const { token } = req.params;
@@ -294,4 +318,37 @@ exports.updatePassword = async (req, res) => {
 };
 
 
+exports.update = async (req, res) => {
+  const { id, prenom, nom, password } = req.body;
 
+  if (!id) {
+    return res.status(400).send({ message: 'ID utilisateur manquant' });
+  }
+
+  try {
+    const existingUser = await User.findById(id);
+    if (!existingUser) {
+      return res.status(404).send({ message: `Utilisateur non trouvé avec l'id ${id}` });
+    }
+
+    const updatedUser = {};
+
+    if (prenom) updatedUser.prenom = prenom;
+    if (nom) updatedUser.nom = nom;
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updatedUser.password = hashedPassword;
+    }
+
+    const data = await User.updateById(id, updatedUser);
+
+    res.status(200).send({
+      message: 'Profil utilisateur mis à jour avec succès',
+      data
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || 'Une erreur s\'est produite lors de la mise à jour du profil utilisateur'
+    });
+  }
+};

@@ -1,7 +1,8 @@
 const sql = require('../config/db');
 const bcrypt = require('bcrypt');
-const speakeasy = require('speakeasy');
-const crypto = require('crypto');
+const Tuteur = require('../model/tuteurModel');
+const { status } = require('init');
+const connection = require('../config/db');
 
 
 
@@ -15,6 +16,8 @@ const User = function(user) {
   this.email_activate = user.email_activate || false;
   this.two_factor_secret = user.two_factor_secret || null;
   this.two_factor_enabled = user.two_factor_enabled || false;
+  this.tuteur_id = user.tuteur_id;
+  this.child_id = user.child_id;
 };
 
 User.create = (newUser) => {
@@ -189,5 +192,54 @@ User.clearResetToken = (userId) => {
     });
   });
 }
+
+User.findTuteurById = (userId) => {
+  return new Promise((resolve, reject) => {
+    sql.query("SELECT * FROM tuteur WHERE user_id = ?", [userId], (err, res) => {
+      if (err) {
+        reject(err);
+      } else if (res.length) {
+        resolve(res[0]);
+      } else {
+        resolve(null); // Si aucun tuteur trouvé
+      }
+    });
+  });
+};
+
+User.updateById = (id, user) => {
+  return new Promise((resolve, reject) => {
+    const updates = [];
+    const values = [];
+
+    for (const [key, value] of Object.entries(user)) {
+      updates.push(`${key} = ?`);
+      values.push(value);
+    }
+
+    if (updates.length === 0) {
+      reject({ kind: "no_data" });
+      return;
+    }
+
+    const query = `UPDATE user SET ${updates.join(", ")} WHERE id = ?`;
+    values.push(id);
+
+    sql.query(query, values, (err, res) => {
+      if (err) {
+        console.log("error: ", err);
+        reject(err);
+        return;
+      }
+
+      if (res.affectedRows == 0) {
+        reject({ kind: "not_found" });
+        return;
+      }
+
+      resolve({ id: id, ...user });
+    });
+  });
+};
 
 module.exports = User;

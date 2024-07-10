@@ -13,7 +13,7 @@ router.get('/verify/:token', userController.verifyEmail);
 router.post('/forgot-password', userController.forgetPassword);
 router.get('/reset-password/:token', userController.resetPassword);
 router.post('/update-password', userController.updatePassword);
-router.put('/editer-mon-profil/:id', authenticateJWT, userController.update);
+router.put('/editer-mon-profil', authenticateJWT, userController.update);
 
 router.post('/login', authController.login);
 router.post('/verify-2fa-code', authController.verifyTokenWithUserId);
