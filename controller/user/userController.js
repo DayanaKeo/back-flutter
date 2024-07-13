@@ -117,7 +117,7 @@ exports.findById = async (req, res) => {
     // Récupérer les détails du tuteur
     const tuteur = await Tuteur.findTuteurById(user.id);
 
-    // Ajoutez les détails du tuteur à l'objet user
+    // Ajouter les détails du tuteur à l'objet user
     user.tuteur = tuteur;
 
     res.status(200).send(user);
@@ -352,3 +352,4 @@ exports.update = async (req, res) => {
     });
   }
 };
+
