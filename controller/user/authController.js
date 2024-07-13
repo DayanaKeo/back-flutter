@@ -81,7 +81,7 @@ exports.login = async (req, res) => {
                 window: 1
             });
 
-            if (!verified) {
+            if (verified) {
                 return res.status(401).send({ message: 'Code 2FA invalide' });
             }
 
@@ -93,7 +93,8 @@ exports.login = async (req, res) => {
                     id: user.id,
                     prenom: user.prenom,
                     nom: user.nom,
-                    email: user.email
+                    email: user.email,
+                    tuteur_id: user.tuteur_id
                 }
             });
         }
@@ -203,3 +204,15 @@ exports.sendActivate2fa = async (req, res) => {
         });
     });
 };
+
+let blacklistedTokens = [];
+
+exports.logout = (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    blacklistedTokens.push(token);
+    res.status(200).send({ message: 'Déconnexion réussie' });
+}
+
+exports.isTokenBlacklisted = (token) => {
+    return blacklistedTokens.includes(token);
+}
