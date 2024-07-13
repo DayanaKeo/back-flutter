@@ -93,7 +93,8 @@ exports.login = async (req, res) => {
                     id: user.id,
                     prenom: user.prenom,
                     nom: user.nom,
-                    email: user.email
+                    email: user.email,
+                    tuteur_id: user.tuteur_id
                 }
             });
         }
