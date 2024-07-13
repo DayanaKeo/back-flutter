@@ -42,7 +42,7 @@ User.findById = (userId) => {
       } else if (res.length) {
         resolve(res[0]);
       } else {
-          reject({ kind: "not_found" });
+        reject({ kind: "not_found" });
       }
     });
   });
@@ -207,6 +207,22 @@ User.findTuteurById = (userId) => {
   });
 };
 
+Tuteur.findByUserId = (userId) => {
+  return new Promise((resolve, reject) => {
+    sql.query("SELECT * FROM tuteur WHERE user_id = ?", [userId], (err, res) => {
+      if (err) {
+        console.error("Erreur lors de la recherche du tuteur:", err);
+        reject(err);
+        return;
+      }
+      if (res.length) {
+        resolve(res[0]);
+      } else {
+        reject({ kind: "not_found" });
+      }
+    });
+  });
+};
 User.updateById = (id, user) => {
   return new Promise((resolve, reject) => {
     const updates = [];
@@ -241,5 +257,6 @@ User.updateById = (id, user) => {
     });
   });
 };
+
 
 module.exports = User;
