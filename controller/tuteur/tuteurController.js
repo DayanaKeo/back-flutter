@@ -1,9 +1,10 @@
 const Joi = require('joi');
 const Tuteur = require('../../model/tuteurModel');
 
-// Schéma de validation pour un enfant
+// Schéma de validation pour le tuteur
 const tuteur = Joi.object({
-  tel: Joi.number().integer().min(10).max(10).required(),
+  user_id: Joi.number().integer().required(),
+  tel: Joi.string().min(10).required(),
   lien_affilie: Joi.string().min(2).max(50).required(),
 });
 
@@ -26,11 +27,31 @@ exports.create = async (req, res) => {
     });
   }
 };
-exports.findTuteurById = async (req, res) => {
+
+exports.findById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+   const tuteur = await Tuteur.findById(id);
+   return res.status(200).send(tuteur);
+  } catch (error) {
+    if (error.kind === "not_found") {
+      return res.status(404).send({
+        message: `Tuteur non trouvé avec l'id ${id}`
+      });
+    } else {
+      return res.status(500).send({
+        message: `Erreur lors de la récupération du tuteur avec l'id ${id}`
+      });
+    }
+  }
+}
+
+exports.findTuteurByUserId = async (req, res) => {
     const { id } = req.params;
   
     try {
-      const tuteur = await Tuteur.findTuteurById(id);
+      const tuteur = await Tuteur.findTuteurByUserId(id);
       return res.status(200).send(tuteur);
     } catch (error) {
       if (error.kind === "not_found") {
@@ -43,6 +64,25 @@ exports.findTuteurById = async (req, res) => {
         });
       }
     }
+};
+
+exports.getChildrenByTuteurUserId = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const tuteur = await Tuteur.getChildrenByTuteurUserId(id);
+    return res.status(200).send(tuteur);
+  } catch (error) {
+    if (error.kind === "not_found") {
+      return res.status(404).send({
+        message: `Erreur lors de la récupération des enfants: ${id}`
+      });
+    } else {
+      return res.status(500).send({
+        message: `Erreur serveur`
+      });
+    }
+  }
 };
 
 // exports.findAll = (req, res) => {
@@ -63,7 +103,7 @@ exports.findTuteurById = async (req, res) => {
 //   nom: Joi.string().min(2).max(50).optional(),
 // }).or('tel', 'lien');
 
-// exports.updateTuteurById = async (req, res) => {
+// exports.updateTuteur = async (req, res) => {
 //   const { id } = req.params;
 //   const { tel, lien } = req.body;
 
@@ -98,6 +138,38 @@ exports.findTuteurById = async (req, res) => {
 //     }
 //   }
 // };
+
+exports.updateTuteur = async (req, res) => {
+  const { error } = tuteur.validate(req.body);
+  if (error) {
+    return res.status(400).send({ message: error.details[0].message });
+  }
+
+  const { user_id, tel, lien_affilie } = req.body;
+
+  try {
+    const existingTuteur = await Tuteur.findByUserId(user_id);
+    if (!existingTuteur) {
+      return res.status(404).send({ message: `Tuteur non trouvé avec l'id utilisateur ${user_id}` });
+    }
+
+    const updatedTuteur = {
+      tel: tel,
+      lien_affilie: lien_affilie
+    };
+
+    const data = await Tuteur.updateByUserId(user_id, updatedTuteur);
+
+    res.status(200).send({
+      message: 'Tuteur mis à jour avec succès',
+      data
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || 'Une erreur s\'est produite lors de la mise à jour du tuteur'
+    });
+  }
+};
 
 // exports.deleteTuteurById = async (req, res) => {
 //     const { id } = req.params;
