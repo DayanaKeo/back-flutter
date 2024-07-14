@@ -12,6 +12,7 @@ const roleRouter = require('./route/role');
 const childRouter = require('./route/childRoute');
 const tuteurRouter = require('./route/tuteurRoute');
 const contactRouter = require('./route/contactRoute');
+const qrcodeRouter = require('./route/qrcodeRoute');
 
 const app = express();
 const port = 4000;
@@ -31,8 +32,9 @@ app.use('/api/auth', userRouter );
 app.use('/api/child', childRouter);
 app.use('/api/tuteur', tuteurRouter);
 app.use('/api/contact-urg', contactRouter);
+app.use('/qr-code', qrcodeRouter);
 
 app.use(apitoolkitClient.errorHandler);
-app.listen(port, () => {
+app.listen( port ,() => {
   console.log(`Server is running on http://localhost:${port}`);
 });
