@@ -113,13 +113,6 @@ exports.findById = async (req, res) => {
         message: `Utilisateur non trouvé avec l'id ${id}`
       });
     }
-
-    // Récupérer les détails du tuteur
-    const tuteur = await Tuteur.findTuteurById(user.id);
-
-    // Ajouter les détails du tuteur à l'objet user
-    user.tuteur = tuteur;
-
     res.status(200).send(user);
   } catch (error) {
     if (error.kind === "not_found") {

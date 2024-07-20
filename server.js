@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { APIToolkit } = require('apitoolkit-express');
+const path = require('path');
 const Joi = require('joi');
 require('dotenv').config()
 
@@ -23,6 +24,8 @@ app.use(cors());
 app.use(apitoolkitClient.expressMiddleware);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 
 //ROUTE USER
 app.use('/api/user', userRouter);
