@@ -63,12 +63,12 @@ Contact.updateById = (id, contact) => {
 Contact.deleteById = (id) => {
   return new Promise((resolve, reject) => {
     // Commencer par supprimer les enregistrements liés dans `contact_urg`
-    sql.query("DELETE FROM child WHERE contact_id = ?", id, (err, result) => {
-      if (err) {
-        console.error("Erreur lors de la suppression des contacts d'urgence:", err);
-        reject(err);
-        return;
-      }
+    // sql.query("DELETE FROM child WHERE contact_id = ?", id, (err, result) => {
+    //   if (err) {
+    //     console.error("Erreur lors de la suppression des contacts d'urgence:", err);
+    //     reject(err);
+    //     return;
+    //   }
 
       // Supprimer le contact après avoir supprimé les enregistrements liés dans `contact_urg`
       sql.query("DELETE FROM contact_urg WHERE id = ?", id, (err, result) => {
@@ -86,7 +86,7 @@ Contact.deleteById = (id) => {
         resolve(result);
       });
     });
-  });
-};
+  };
+
 
 module.exports = Contact;
